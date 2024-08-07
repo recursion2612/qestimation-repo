@@ -1,0 +1,16 @@
+/home/aashay/codes/qestimation/armadillo-14.0.1/CMakeFiles/armadillo.dir
+/home/aashay/codes/qestimation/armadillo-14.0.1/CMakeFiles/test.dir
+/home/aashay/codes/qestimation/armadillo-14.0.1/CMakeFiles/edit_cache.dir
+/home/aashay/codes/qestimation/armadillo-14.0.1/CMakeFiles/rebuild_cache.dir
+/home/aashay/codes/qestimation/armadillo-14.0.1/CMakeFiles/list_install_components.dir
+/home/aashay/codes/qestimation/armadillo-14.0.1/CMakeFiles/install.dir
+/home/aashay/codes/qestimation/armadillo-14.0.1/CMakeFiles/install/local.dir
+/home/aashay/codes/qestimation/armadillo-14.0.1/CMakeFiles/install/strip.dir
+/home/aashay/codes/qestimation/armadillo-14.0.1/tests1/CMakeFiles/smoke_test.dir
+/home/aashay/codes/qestimation/armadillo-14.0.1/tests1/CMakeFiles/test.dir
+/home/aashay/codes/qestimation/armadillo-14.0.1/tests1/CMakeFiles/edit_cache.dir
+/home/aashay/codes/qestimation/armadillo-14.0.1/tests1/CMakeFiles/rebuild_cache.dir
+/home/aashay/codes/qestimation/armadillo-14.0.1/tests1/CMakeFiles/list_install_components.dir
+/home/aashay/codes/qestimation/armadillo-14.0.1/tests1/CMakeFiles/install.dir
+/home/aashay/codes/qestimation/armadillo-14.0.1/tests1/CMakeFiles/install/local.dir
+/home/aashay/codes/qestimation/armadillo-14.0.1/tests1/CMakeFiles/install/strip.dir
