@@ -4,7 +4,7 @@
 #include <fstream>
 #include <string>
 #include <cmath>
-#include <omp.h>
+
 // #define QICLIB_DONT_USE_NLOPT
 // #include "/home/aashay/QIClib-1.0.2/include/QIClib"
 
@@ -290,7 +290,7 @@ int main(int argc, char* argv[])
 
 	cout<<" ...Initiating MCMC sampling... \n";
 
-	int mcmc_iter = 100000;
+	int mcmc_iter = 10000;
 
 	cout<<"No. of Iterations:"<<mcmc_iter<<endl;
 
@@ -310,9 +310,15 @@ int main(int argc, char* argv[])
 	int acceptance = 0;
 	int always_accepted = 0;
 
-	#pragma omp parallel for
+
+	time_t start, end; 
+
+	time(&start); 
+	
 	for(int ii=1; ii<mcmc_iter; ii++)
 	{
+		cout<<ii<<endl;
+
 		double delta_ii = param_arr(ii-1);
 
 		// generate a candidate value of the parameter from some proposal distribution 
@@ -379,14 +385,21 @@ int main(int argc, char* argv[])
 
 				// cout<<"Status: Rejected\n";
 
-			}
+			} 
 
 		}
 
 		// cout<<"\n\n\n";
 		
-
 	}
+
+	// Recording end time. 
+	time(&end); 
+	
+	// Calculating total time taken by the program. 
+	double time_taken = double(end - start);
+	cout.precision(5); 
+	cout << "Time taken by program is : " << fixed << time_taken <<" sec " << endl;
 
 	cout<<"acceptance_rate="<<double(acceptance)/double(mcmc_iter)<<endl;
 	cout<<"fraction_of_always_accepted="<<double(always_accepted)/double(mcmc_iter)<<endl;
