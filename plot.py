@@ -41,8 +41,7 @@ ax[4].hist(data8[int(2*Lby4):int(3*Lby4), 1], density=True, bins='fd')
 ax[4].axvline(x=(1/Lby4)*np.sum(data8[int(2*Lby4):int(3*Lby4), 1]),  color="brown")
 
 ax[5].hist(data8[int(3*Lby4):int(4*Lby4), 1], density=True, bins='fd')
-ax[5].axvline(x=(1/Lby4)*np.sum(data8[int(3*Lby4):int(4*Lby4), 1]),  color="brown"
-    )
+ax[5].axvline(x=(1/Lby4)*np.sum(data8[int(3*Lby4):int(4*Lby4), 1]),  color="brown")
 
 
 

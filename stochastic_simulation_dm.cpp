@@ -159,7 +159,7 @@ vec linear_stochastic_trajectoryV1(int steps, cx_mat& H, double adhoc_prob, doub
 
 	for(int ii=1; ii<steps; ii++)
 		{
-			
+			arma_rng::set_seed(42069);
 			// Calculate the probabilty for transition
 			
 			// double dum = real(trace(cdagc * rhot));
