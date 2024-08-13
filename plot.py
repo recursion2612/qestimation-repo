@@ -11,6 +11,36 @@ data7 = np.loadtxt("data_dm_linear_test2.txt")
 data8 = np.loadtxt("mcmc_data.txt")
 
 
+# test = np.loadtxt("test.txt")
+
+# fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 7))
+
+
+# ax.hist(test, bins="fd")
+
+
+# print(np.mean(test))
+# print(np.std(test))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############################################################################################################################################
+
 
 
 fig, ax = plt.subplots(nrows=6, ncols=1, figsize=(12, 7))

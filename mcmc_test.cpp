@@ -330,75 +330,115 @@ int main(int argc, char* argv[])
 	for(int ii=1; ii<mcmc_iter; ii++)
 	{
 
+		cout<<ii<<endl;
+
 		double delta_ii = param_arr(ii-1);
 
-		// generate a candidate value of the parameter from some proposal distribution 
 		double delta_c = generate_delta_from_proposal_dist(delta_ii);
-		
-		// cout<<"Iteration: "<<ii<<endl;
 
-		// cout<<"Candidate value: "<<delta_c<<endl;
-
-		// initialize hamiltonian with the candidate param
-		H_c = Rabi_with_detunning(omega, delta_c);
-
-		// initalize hamiltonian with previous param
-		H_ii = Rabi_with_detunning(omega, delta_ii);
-
-
-		// returns a likelihood function values upto some timesteps 'steps' i.e. upto time "dt_1*steps"
-		rhot = rho0;
-		// cout<<" Candidate likelihood values \n";
-		likelihood_vec_c = linear_stochastic_trajectoryV1(steps, H_c, adhoc_prob, dt_1, rhot, c, cdagc);
-	
-		// returns a likelihood function values upto some timesteps 'steps' i.e. upto time "dt_1*steps"
-		rhot = rho0;
-		// cout<<" Previous likelihood Values ";
-		likelihood_vec_ii = linear_stochastic_trajectoryV1(steps, H_ii, adhoc_prob, dt_1, rhot, c, cdagc);
-
-		// Calculate acceptance probability 
-		double alpha = exp(likelihood_vec_c(1)-likelihood_vec_ii(1))*(prior_dist_pdf(delta_c)/prior_dist_pdf(delta_ii))*(proposal_dist_pdf(delta_ii, delta_c)/proposal_dist_pdf(delta_c, delta_ii));
-
-		
+		double alpha = (test_target_pdf(delta_c)/test_target_pdf(delta_ii))*(proposal_dist_pdf(delta_c, delta_ii)/proposal_dist_pdf(delta_ii, delta_c)); 
 
 		if (alpha >= 1.0)
 		{
 
 			param_arr(ii) = delta_c;
-
 			acceptance++;
 			always_accepted++;
-
-			// cout<<"Status: Accepted without a doubt\n";
 
 		}
 
 		else
 		{
-			// arma_rng::set_seed_random();
-			double uni_rv  = randu();
-
-			if( uni_rv <= alpha )
+			double u = randu();
+			if(u<=alpha)
 			{
-
 				param_arr(ii) = delta_c;
 
 				acceptance++;
 
-				// cout<<"Status: Accepted\n";
-
 			}
-
 			else
 			{
-
-				param_arr(ii) = param_arr(ii-1);
-
-				// cout<<"Status: Rejected\n";
-
-			} 
-
+				param_arr(ii) = delta_ii;
+			}
 		}
+
+
+
+
+
+
+
+
+		// double delta_ii = param_arr(ii-1);
+
+		// // generate a candidate value of the parameter from some proposal distribution 
+		// double delta_c = generate_delta_from_proposal_dist(delta_ii);
+		
+		// // cout<<"Iteration: "<<ii<<endl;
+
+		// // cout<<"Candidate value: "<<delta_c<<endl;
+
+		// // initialize hamiltonian with the candidate param
+		// H_c = Rabi_with_detunning(omega, delta_c);
+
+		// // initalize hamiltonian with previous param
+		// H_ii = Rabi_with_detunning(omega, delta_ii);
+
+
+		// // returns a likelihood function values upto some timesteps 'steps' i.e. upto time "dt_1*steps"
+		// rhot = rho0;
+		// // cout<<" Candidate likelihood values \n";
+		// likelihood_vec_c = linear_stochastic_trajectoryV1(steps, H_c, adhoc_prob, dt_1, rhot, c, cdagc);
+	
+		// // returns a likelihood function values upto some timesteps 'steps' i.e. upto time "dt_1*steps"
+		// rhot = rho0;
+		// // cout<<" Previous likelihood Values ";
+		// likelihood_vec_ii = linear_stochastic_trajectoryV1(steps, H_ii, adhoc_prob, dt_1, rhot, c, cdagc);
+
+		// // Calculate acceptance probability 
+		// double alpha = exp(likelihood_vec_c(1)-likelihood_vec_ii(1))*(prior_dist_pdf(delta_c)/prior_dist_pdf(delta_ii))*(proposal_dist_pdf(delta_ii, delta_c)/proposal_dist_pdf(delta_c, delta_ii));
+
+		
+
+		// if (alpha >= 1.0)
+		// {
+
+		// 	param_arr(ii) = delta_c;
+
+		// 	acceptance++;
+		// 	always_accepted++;
+
+		// 	// cout<<"Status: Accepted without a doubt\n";
+
+		// }
+
+		// else
+		// {
+		// 	// arma_rng::set_seed_random();
+		// 	double uni_rv  = randu();
+
+		// 	if( uni_rv <= alpha )
+		// 	{
+
+		// 		param_arr(ii) = delta_c;
+
+		// 		acceptance++;
+
+		// 		// cout<<"Status: Accepted\n";
+
+		// 	}
+
+		// 	else
+		// 	{
+
+		// 		param_arr(ii) = param_arr(ii-1);
+
+		// 		// cout<<"Status: Rejected\n";
+
+		// 	} 
+
+		// }
 
 		// cout<<"\n\n\n";
 		
