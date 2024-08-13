@@ -44,7 +44,7 @@ double prior_dist_pdf(double delta_in)
 double proposal_dist_pdf(double delta_c, double mean)
 {
 
-	double sigma = 2.0;
+	double sigma = 1.0;
 
 	double prob = (1.0/sqrt(2*pi*pow(sigma,2)))*exp(-pow(((delta_c - mean)/sigma),2)/2.0);
 
@@ -52,7 +52,6 @@ double proposal_dist_pdf(double delta_c, double mean)
 	return prob;
 
 }
-
 
 
 double generate_delta_from_proposal_dist(double delta_in)
@@ -152,12 +151,15 @@ void linear_stochastic_trajectoryV2(int steps, cx_mat& H, double adhoc_prob, dou
 }
 
 
+
+// Another VVIP function. return the likelihood function of one linear quantum trajectory
+
 vec linear_stochastic_trajectoryV1(int steps, cx_mat& H, double adhoc_prob, double dt_1, cx_mat& rhot, cx_mat& c, cx_mat& cdagc)
 {
 	
 	vec likelihood_vec(2, fill::zeros);
 
-	arma_rng::set_seed(42069);
+	// arma_rng::set_seed(42069);
 	for(int ii=1; ii<steps; ii++)
 		{
 			
@@ -291,7 +293,7 @@ int main(int argc, char* argv[])
 
 	cout<<" ...Initiating MCMC sampling... \n";
 
-	int mcmc_iter = 10000;
+	int mcmc_iter = 1000;
 
 	cout<<"No. of Iterations:"<<mcmc_iter<<endl;
 
@@ -318,16 +320,17 @@ int main(int argc, char* argv[])
 	
 	for(int ii=1; ii<mcmc_iter; ii++)
 	{
-		cout<<ii<<endl;
 
 		double delta_ii = param_arr(ii-1);
 
 		// generate a candidate value of the parameter from some proposal distribution 
 		double delta_c = generate_delta_from_proposal_dist(delta_ii);
 		
-		// cout<<"Iteration: "<<ii<<endl;
+		cout<<"Iteration: "<<ii<<endl;
 
 		// cout<<"Candidate value: "<<delta_c<<endl;
+
+		// cout<<"Default value:"<<delta_ii<<endl;
 
 		// initialize hamiltonian with the candidate param
 		H_c = Rabi_with_detunning(omega, delta_c);
@@ -338,18 +341,35 @@ int main(int argc, char* argv[])
 
 		// returns a likelihood function values upto some timesteps 'steps' i.e. upto time "dt_1*steps"
 		rhot = rho0;
-		// cout<<" Candidate likelihood values \n";
+		// cout<<" Candidate log likelihood values \n";
 		likelihood_vec_c = linear_stochastic_trajectoryV1(steps, H_c, adhoc_prob, dt_1, rhot, c, cdagc);
-	
+		
+		cout<<likelihood_vec_c(1)<<endl;
+
 		// returns a likelihood function values upto some timesteps 'steps' i.e. upto time "dt_1*steps"
 		rhot = rho0;
-		// cout<<" Previous likelihood Values ";
+		// cout<<"Previous likelihood Values ";
 		likelihood_vec_ii = linear_stochastic_trajectoryV1(steps, H_ii, adhoc_prob, dt_1, rhot, c, cdagc);
 
-		// Calculate acceptance probability 
-		double alpha = exp(likelihood_vec_c(1)-likelihood_vec_ii(1))*(prior_dist_pdf(delta_c)/prior_dist_pdf(delta_ii))*(proposal_dist_pdf(delta_ii, delta_c)/proposal_dist_pdf(delta_c, delta_ii));
+		cout<<likelihood_vec_ii(1)<<endl;
 
-		
+		// Calculate acceptance probability
+
+		double likelihood_ratio = exp(likelihood_vec_c(1)-likelihood_vec_ii(1));
+
+		double prior_ratio = (prior_dist_pdf(delta_c)/prior_dist_pdf(delta_ii));
+
+		double proposal_ratio = (proposal_dist_pdf(delta_ii, delta_c)/proposal_dist_pdf(delta_c, delta_ii));
+
+		double alpha = likelihood_ratio*prior_ratio*proposal_ratio;
+
+		// cout<<"Alpha:"<<alpha<<endl;
+
+		// cout<<"Likelihood_ratio:"<<likelihood_ratio<<endl;
+
+		// cout<<"Prior_ratio:"<<prior_ratio<<endl;
+
+		// cout<<"Proposal Ratio:"<<proposal_ratio<<endl;
 
 		if (alpha >= 1.0)
 		{
@@ -390,13 +410,18 @@ int main(int argc, char* argv[])
 
 		}
 
-		// cout<<"\n\n\n";
+		cout<<"\n\n\n";
 		
 	}
 
 	// Recording end time. 
 	time(&end); 
 	
+
+
+
+
+
 	// Calculating total time taken by the program. 
 	double time_taken = double(end - start);
 	cout.precision(5); 
