@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 	cout.precision(16);
 	// Define parameter about system
 	double omega = 1.3;
-	double delta = 1.43;
+	double delta = stod(argv[1]);
 	double gamma = 0.55;
 
 	arma_rng::set_seed(42069);
@@ -80,10 +80,10 @@ int main(int argc, char* argv[])
 	// Define infinitesimal time-steps
 	// This can be done in ad hoc manner or by taking forbinous norm 
 	// we try both ways 
-	double dt_1 = 0.01;//0.1/norm(H, "fro");
+	double dt_1 = 0.001; //0.1/norm(H, "fro");
 
 	// We can also include adhoc probability which is used in linear quanutum trajecotries
-	double adhoc_prob = 0.55; // lambda: To be used for linear quantum trajectories
+	double adhoc_prob = 0.1; // lambda: To be used for linear quantum trajectories
 
 	// total time of evolution
 	double T = 400.0; 
@@ -100,12 +100,15 @@ int main(int argc, char* argv[])
 	vec avg_y(steps, fill::zeros);    // records pauli op values
 	vec avg_z(steps, fill::zeros);
 
-	vec tr_data(steps, fill::zeros); // records trace data
+	ivec countsss_arr(steps, fill::zeros);
+
+	vec lntr_data(steps, fill::zeros), tr_data(steps, fill::zeros); // records trace data
 
 	avg_x(0) = real(trace(sx*rho0));
 	avg_y(0) = real(trace(sy*rho0));
 	avg_z(0) = real(trace(sz*rho0));
 
+	lntr_data(0) = log(real(trace(rho0)));
 	tr_data(0) = real(trace(rho0));
 
 
@@ -132,10 +135,10 @@ int main(int argc, char* argv[])
 			
 			double dum = real(trace(cdagc * rhot));
 			
-			double p = adhoc_prob*dt_1; //dum*dt_1;
+			double p = dum*dt_1;//adhoc_prob*dt_1; //
 
-			cx_mat Omega0 = M0(H, cdagc, dt_1, adhoc_prob);
-			cx_mat Omega1 = M1(c, adhoc_prob);
+			cx_mat Omega0 = M0(H, cdagc, dt_1, dum);
+			cx_mat Omega1 = M1(c, dum);
 
 
 			// Pick random number 
@@ -146,9 +149,10 @@ int main(int argc, char* argv[])
 				rhot = Omega1*rhot*Omega1.t();
 				
 
-				// rhot = rhot = (1.0/real(trace(rhot)))*rhot;
+				rhot = rhot = (1.0/real(trace(rhot)))*rhot;
 				
-				countsss += 1;
+				countsss_arr(ii) = 1;
+				countsss++;
 				
 			}
 			else
@@ -156,8 +160,8 @@ int main(int argc, char* argv[])
 
 				rhot = Omega0*rhot*Omega0.t();
 				
-				// rhot = (1.0/real(trace(rhot)))*rhot;
-				
+				rhot = (1.0/real(trace(rhot)))*rhot;
+				countsss_arr(ii) = 0;
 
 			}
 			avg_x(ii) += (1.0/double(samples))*real(trace(sx*rhot));
@@ -166,8 +170,8 @@ int main(int argc, char* argv[])
 
 			prob_dist(0,ii) += (1.0/double(samples))*real(rhot(0,0));
 			prob_dist(1,ii) += (1.0/double(samples))*real(rhot(1,1));
-			tr_data(ii)     += (1.0/double(samples))*log(real(trace(rhot)));  
-			
+			lntr_data(ii)   += (1.0/double(samples))*log(real(trace(rhot)));  
+			tr_data(ii)     += (1.0/double(samples))*real(trace(rhot));
 
 		}
 
@@ -175,10 +179,10 @@ int main(int argc, char* argv[])
 
 	cout<<"Total counts:"<<countsss<<endl;
 
-	ofstream myFile("data_dm_2_linear.txt");
+	ofstream myFile("data_dm_2_delta="+to_string(delta)+".txt");
 	for(int ii=0; ii<steps; ii++)
 	{
-		myFile<<dt_1*double(ii)<<"\t"<<avg_x(ii)<<"\t"<<avg_y(ii)<<'\t'<<avg_z(ii)<<'\t'<<prob_dist(0,ii)<<'\t'<<prob_dist(1,ii)<<'\t'<<tr_data(ii)<<endl;
+		myFile<<dt_1*double(ii)<<'\t'<<tr_data(ii)<<'\t'<<lntr_data(ii)<<'\t'<<countsss_arr(ii)<<"\t"<<avg_x(ii)<<"\t"<<avg_y(ii)<<'\t'<<avg_z(ii)<<'\t'<<prob_dist(0,ii)<<'\t'<<prob_dist(1,ii)<<endl;
 	}
 
 

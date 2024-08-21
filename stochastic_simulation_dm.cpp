@@ -54,15 +54,6 @@ double proposal_dist_pdf(double delta_c, double mean)
 }
 
 
-double test_target_pdf(double x)
-{
-
-	double pdf = exp(-pow(((x - 10)/1.0),2)/2.0);
-
-	return pdf;
-}
-
-
 double generate_delta_from_proposal_dist(double delta_in)
 {
 
@@ -106,21 +97,36 @@ cx_mat Hypo(cx_mat A, cx_mat rho, double p)
 	return G;
 }
 
+cx_mat M0(cx_mat H, cx_mat cdagc, double dt, double p)
+{
 
+	cx_mat M0(H.n_rows, H.n_cols, fill::zeros);
+	cx_mat Eye(H.n_rows, H.n_cols, fill::eye);
+
+	M0 = Eye - (j*dt)*H - (0.5*dt)*(cdagc - p*Eye);
+
+	return M0;
+
+}
+
+cx_mat M1(cx_mat c, double p)
+{
+	return (1.0/sqrt(p))*c;
+}
 
 
 /// VIP function 
 /// generates one linear quantum trajectories with given hamiltonian
-void linear_stochastic_trajectoryV2(int steps, cx_mat& H, double adhoc_prob, double dt_1, cx_mat& rhot, cx_mat& c, cx_mat& cdagc, vec& tr_data, vec& lntr_data, ivec& countsss_arr)
+void linear_stochastic_trajectoryV1(int steps, cx_mat& H, double adhoc_prob, double dt_1, cx_mat& rhot, cx_mat& c, cx_mat& cdagc, vec& tr_data, vec& lntr_data, ivec& countsss_arr)
 {
 	for(int ii=1; ii<steps; ii++)
 		{
 			
 			// Calculate the probabilty for transition
 			
-			// double dum = real(trace(cdagc * rhot));
+			double dum = real(trace(cdagc * rhot));
 			
-			double p = adhoc_prob*dt_1; //dum*dt_1;
+			double p = adhoc_prob*dt_1;//dum*dt_1; //
 
 
 			// Pick random number 
@@ -163,7 +169,7 @@ void linear_stochastic_trajectoryV2(int steps, cx_mat& H, double adhoc_prob, dou
 
 // Another VVIP function. return the likelihood function of one linear quantum trajectory
 
-vec linear_stochastic_trajectoryV1(int steps, cx_mat& H, double adhoc_prob, double dt_1, cx_mat& rhot, cx_mat& c, cx_mat& cdagc)
+vec linear_stochastic_trajectoryV2(int steps, cx_mat& H, double adhoc_prob, double dt_1, cx_mat& rhot, cx_mat& c, cx_mat& cdagc)
 {
 	
 	vec likelihood_vec(2, fill::zeros);
@@ -222,6 +228,61 @@ vec linear_stochastic_trajectoryV1(int steps, cx_mat& H, double adhoc_prob, doub
 }
 
 
+vec linear_stochastic_trajectoryV3(int steps, cx_mat& H, double adhoc_prob, double dt_1, cx_mat& rhot, cx_mat& c, cx_mat& cdagc)
+{
+	vec likelihood_vec(2, fill::zeros);
+
+	// arma_rng::set_seed(42069);
+	for(int ii=1; ii<steps; ii++)
+	{
+		
+		// Calculate the probabilty for transition
+		
+		// double dum = real(trace(cdagc * rhot));
+		
+		double p = adhoc_prob*dt_1; //dum*dt_1;
+
+		cx_mat Omega0 = M0(H, cdagc, dt_1, adhoc_prob);
+		cx_mat Omega1 = M1(c, adhoc_prob);
+
+
+		// Pick random number 
+		double u = randu();
+		
+		if(u <= p) // Transition possible
+		{
+			rhot = Omega1*rhot*Omega1.t();
+			
+
+			// rhot = rhot = (1.0/real(trace(rhot)))*rhot;
+			
+			
+		}
+		else
+		{
+
+			rhot = Omega0*rhot*Omega0.t();
+			
+			// rhot = (1.0/real(trace(rhot)))*rhot;
+			
+
+		}
+		
+		if(ii == steps-1)
+		{
+
+			likelihood_vec(0) = real(trace(rhot)); // stores liklihood function
+			likelihood_vec(1) = log(likelihood_vec(0)); // stores log-liklihood function
+			
+
+		}	
+		
+
+	}	
+
+	return likelihood_vec;
+
+}
 
 
 
@@ -242,7 +303,7 @@ int main(int argc, char* argv[])
 	// collapse operator 
 	cx_mat c = cx_double(sqrt(gamma)*0.5, 0.0)*(sx - j * sy);
 
-	// c_dag * c     operator
+	// c_dag * c operator
 	cx_mat cdagc = c.t()*c;
 
 	// Hamiltonian
@@ -259,10 +320,10 @@ int main(int argc, char* argv[])
 	// Define infinitesimal time-steps
 	// This can be done in ad hoc manner or by taking forbinous norm 
 	// we try both ways 
-	double dt_1 = 0.001;//0.1/norm(H, "fro");
+	double dt_1 = 0.001;  //0.1/norm(H, "fro");
 
 	// We can also include adhoc probability which is used in linear quanutum trajecotries
-	double adhoc_prob = 0.55; // lambda: To be used for linear quantum trajectories
+	double adhoc_prob = 0.1; // lambda: To be used for linear quantum trajectories
 
 	// total time of evolution
 	double T = 400.0; 
@@ -271,6 +332,8 @@ int main(int argc, char* argv[])
 	int steps = int(T/dt_1);
 
 	cout<<"time step:"<<dt_1<<endl<<"steps:"<<steps<<endl;
+
+	cout<<"Value of lambda used in ostensible distribution(Poission): "<<adhoc_prob<<endl;
 
 	ivec countsss_arr(steps, fill::zeros);
 
@@ -284,16 +347,39 @@ int main(int argc, char* argv[])
 	// Dynamics
 	cx_mat rhot(2, 2, fill::zeros); // dummy wf
 
-	rhot = rho0;
+	
 
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// TEST CODE ///
 	// generates a linear quantum trajectory with true parameter values 
-	linear_stochastic_trajectoryV2(steps, H, adhoc_prob, dt_1, rhot, c, cdagc, tr_data, lntr_data, countsss_arr);
+	
+	// rhot = rho0;
+	// linear_stochastic_trajectoryV1(steps, H, adhoc_prob, dt_1, rhot, c, cdagc, tr_data, lntr_data, countsss_arr);
+
+	// cout<<"method 1\n"<<"tr"<<tr_data(steps-1)<<"\t lntr"<<lntr_data(steps-1)<<endl;
+
+	// rhot = rho0;
+	// cout<<"method 2\n";
+	// cout<<linear_stochastic_trajectoryV2(steps, H, adhoc_prob, dt_1, rhot, c, cdagc)<<endl;
+
+	// rhot = rho0;
+	// cout<<"method 3\n";
+	// cout<<linear_stochastic_trajectoryV3(steps, H, adhoc_prob, dt_1, rhot, c, cdagc)<<endl;
+
+	// cout<<"Total counts:"<<sum(countsss_arr)<<endl;
 
 
-	cout<<"Total counts:"<<sum(countsss_arr)<<endl;
+	// ofstream myFile("data_dm_linear_delta="+to_string(delta)+".txt");
+	// for(int ii=0; ii<steps; ii++)
+	// {
+	// 	myFile<<dt_1*double(ii)<<'\t'<<tr_data(ii)<<'\t'<<lntr_data(ii)<<'\t'<<countsss_arr(ii)<<endl;
+	// }
 
+ 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	//MCMC code begins 
+	// MCMC code begins 
 	// the main goal of this code is to output a trace plot of the parameter vs. iterations to check if we can infer the parameter
 	// Parameter delta = 1.43 actual value 
 	// We start with a gaussian prior with mean = 2.0 and std = 1.0
@@ -322,10 +408,13 @@ int main(int argc, char* argv[])
 	int acceptance = 0;
 	int always_accepted = 0;
 
+	// ofstream rawdata("mcmc_primitive_data.txt");
 
 	time_t start, end; 
 
 	time(&start); 
+
+	
 	
 	for(int ii=1; ii<mcmc_iter; ii++)
 	{
@@ -335,9 +424,7 @@ int main(int argc, char* argv[])
 		// generate a candidate value of the parameter from some proposal distribution 
 		double delta_c = generate_delta_from_proposal_dist(delta_ii);
 		
-		// cout<<"Iteration: "<<ii<<endl;
-
-		// cout<<"Candidate value: "<<delta_c<<endl;
+		cout<<"Iteration: "<<ii<<endl;
 
 		// initialize hamiltonian with the candidate param
 		H_c = Rabi_with_detunning(omega, delta_c);
@@ -348,19 +435,28 @@ int main(int argc, char* argv[])
 
 		// returns a likelihood function values upto some timesteps 'steps' i.e. upto time "dt_1*steps"
 		rhot = rho0;
-		// cout<<" Candidate likelihood values \n";
-		likelihood_vec_c = linear_stochastic_trajectoryV1(steps, H_c, adhoc_prob, dt_1, rhot, c, cdagc);
-	
-		// returns a likelihood function values upto some timesteps 'steps' i.e. upto time "dt_1*steps"
-		rhot = rho0;
-		// cout<<" Previous likelihood Values ";
-		likelihood_vec_ii = linear_stochastic_trajectoryV1(steps, H_ii, adhoc_prob, dt_1, rhot, c, cdagc);
-
-		// Calculate acceptance probability 
-		double alpha = exp(likelihood_vec_c(1)-likelihood_vec_ii(1))*(prior_dist_pdf(delta_c)/prior_dist_pdf(delta_ii))*(proposal_dist_pdf(delta_ii, delta_c)/proposal_dist_pdf(delta_c, delta_ii));
-
+		
+		likelihood_vec_c = linear_stochastic_trajectoryV3(steps, H_c, adhoc_prob, dt_1, rhot, c, cdagc);
 		
 
+		// returns a likelihood function values upto some timesteps 'steps' i.e. upto time "dt_1*steps"
+		rhot = rho0;
+		
+		likelihood_vec_ii = linear_stochastic_trajectoryV3(steps, H_ii, adhoc_prob, dt_1, rhot, c, cdagc);
+
+
+		// Calculate acceptance probability
+
+		double likelihood_ratio = exp(likelihood_vec_c(1)-likelihood_vec_ii(1));
+
+		double prior_ratio = (prior_dist_pdf(delta_c)/prior_dist_pdf(delta_ii));
+
+		double proposal_ratio = (proposal_dist_pdf(delta_ii, delta_c)/proposal_dist_pdf(delta_c, delta_ii));
+
+		double alpha = likelihood_ratio*prior_ratio*proposal_ratio;
+
+		
+		
 		if (alpha >= 1.0)
 		{
 
@@ -369,8 +465,7 @@ int main(int argc, char* argv[])
 			acceptance++;
 			always_accepted++;
 
-			// cout<<"Status: Accepted without a doubt\n";
-
+			
 		}
 
 		else
@@ -385,7 +480,7 @@ int main(int argc, char* argv[])
 
 				acceptance++;
 
-				// cout<<"Status: Accepted\n";
+				
 
 			}
 
@@ -394,18 +489,20 @@ int main(int argc, char* argv[])
 
 				param_arr(ii) = param_arr(ii-1);
 
-				// cout<<"Status: Rejected\n";
+				
 
 			} 
 
 		}
 
-		// cout<<"\n\n\n";
+		// rawdata<<ii<<"\t"<<delta_in<<"\t"<<delta_c<<"\t"<<likelihood_vec_ii(1)<<"\t"<<likelihood_vec_c(1)<<"\t"<<likelihood_ratio<<"\t"<<prior_ratio<<"\t"<<proposal_ratio<<"\t"<<alpha<<"\t"<<param_arr(ii)<<endl;
 		
 	}
 
 	// Recording end time. 
 	time(&end); 
+
+	// rawdata.close();
 	
 
 
@@ -432,12 +529,7 @@ int main(int argc, char* argv[])
 
 
 
-	// ofstream myFile("data_dm_linear_test2.txt");
-	// for(int ii=0; ii<steps; ii++)
-	// {
-	// 	myFile<<dt_1*double(ii)<<'\t'<<tr_data(ii)<<'\t'<<lntr_data(ii)<<'\t'<<countsss_arr(ii)<<endl;
-	// }
-
+	
 
 
 	return 0;
