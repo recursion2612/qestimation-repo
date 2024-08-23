@@ -6,15 +6,15 @@ print(sys.executable)
 
 # Load the data
 
-data0 = np.loadtxt("data_dm_2_linear_delta=1.430000.txt")
-data1 = np.loadtxt("data_dm_2_linear_delta=0.975000.txt")
-data2 = np.loadtxt("data_dm_2_linear_delta=1.300000.txt")
-data3 = np.loadtxt("data_dm_2_linear_delta=1.625000.txt")
-data4 = np.loadtxt("data_dm_2_linear_delta=2.600000.txt")
-data5 = np.loadtxt("data_dm_2_linear_delta=0.100000.txt")
-data6 = np.loadtxt("data_dm_2_linear_delta=0.000000.txt")
+data0 = np.loadtxt("data_dm_linear_delta=1.430000.txt")
+data1 = np.loadtxt("data_dm_linear_delta=0.975000.txt")
+data2 = np.loadtxt("data_dm_linear_delta=1.300000.txt")
+data3 = np.loadtxt("data_dm_linear_delta=1.625000.txt")
+data4 = np.loadtxt("data_dm_linear_delta=2.600000.txt")
+data5 = np.loadtxt("data_dm_linear_delta=0.100000.txt")
+data6 = np.loadtxt("data_dm_linear_delta=0.000000.txt")
 
-data7 = np.loadtxt("data_dm_2_delta=1.625000.txt")
+data7 = np.loadtxt("data_dm_linear_delta=0.650000.txt")
 
 
 data10 = np.loadtxt("mcmc_data.txt")
@@ -78,7 +78,7 @@ ax[1].axvline(x=(1/L)*np.sum(data10[:, 1]), color="brown", label="mean="+str(del
 print(delta_mean)
 
 
-fig.suptitle(r"MCMC with $\lambda=0.3$")
+fig.suptitle(r"MCMC with $\lambda=0.2$")
 
 
 
@@ -103,48 +103,50 @@ for axs in ax:
 
 
 
-# ax[0].plot(data0[:, 0], data0[:, 1], label=r"Tr$(\rho(t))$ d=0.650000")
-# ax[1].plot(data0[:, 0], data0[:, 2], label=r"ln(Tr$(\rho(t))$) d=0.650000")
-# ax[2].plot(data0[:, 0], data0[:, 3], label=r"$dN_{t}$ d=0.650000")
 
-
-# ax[0].plot(data1[:, 0], data1[:, 1], label=r"Tr$(\rho(t))$ d =0.975000")
-# ax[1].plot(data1[:, 0], data1[:, 2], label=r"ln(Tr$(\rho(t))$) d = 0.975000")
-# ax[2].plot(data1[:, 0], data1[:, 3], label=r"$dN_{t}$ d = 0.975000")
+# ax[0].plot(data6[:, 0], data6[:, 1], label=r"Tr$(\rho(t)) \Delta =0.000$")
+# ax[1].plot(data6[:, 0], data6[:, 2], label=r"ln(Tr$(\rho(t))$ $\Delta = 0.000$")
+# ax[2].plot(data6[:, 0], data6[:, 3], label=r"$dN_{t} \Delta = 0.000$")
 
 
 
-
-# ax[0].plot(data2[:, 0], data2[:, 1], label=r"Tr$(\rho(t))$ d =1.300000")
-# ax[1].plot(data2[:, 0], data2[:, 2], label=r"ln(Tr$(\rho(t))$) d = 1.300000")
-# ax[2].plot(data2[:, 0], data2[:, 3], label=r"$dN_{t}$ d = 1.300000")
-
+# ax[0].plot(data5[:, 0], data5[:, 1], label=r"Tr$(\rho(t)) \Delta =0.100$")
+# ax[1].plot(data5[:, 0], data5[:, 2], label=r"ln(Tr$(\rho(t))$ $\Delta = 0.100$")
+# ax[2].plot(data5[:, 0], data5[:, 3], label=r"$dN_{t} \Delta = 0.100$")
 
 
-# ax[0].plot(data3[:, 0], data3[:, 1], label=r"Tr$(\rho(t))$ d =1.625000")
-# ax[1].plot(data3[:, 0], data3[:, 2], label=r"ln(Tr$(\rho(t))$) d = 1.625000")
-# ax[2].plot(data3[:, 0], data3[:, 3], label=r"$dN_{t}$ d = 1.625000")
+# ax[0].plot(data7[:, 0], data7[:, 1], label=r"Tr$(\rho(t))$ $\Delta=0.650$")
+# ax[1].plot(data7[:, 0], data7[:, 2], label=r"ln(Tr$(\rho(t))$ $\Delta=0.650$")
+# ax[2].plot(data7[:, 0], data7[:, 3], label=r"$dN_{t}$ $\Delta=0.650$")
 
 
 
-
-# ax[0].plot(data4[:, 0], data4[:, 1], label=r"Tr$(\rho(t))$ d =2.600000")
-# ax[1].plot(data4[:, 0], data4[:, 2], label=r"ln(Tr$(\rho(t))$) d = 2.600000")
-# ax[2].plot(data4[:, 0], data4[:, 3], label=r"$dN_{t}$ d = 2.600000")
-
-
-# ax[0].plot(data5[:, 0], data5[:, 1], label=r"Tr$(\rho(t))$ d =0.100000")
-# ax[1].plot(data5[:, 0], data5[:, 2], label=r"ln(Tr$(\rho(t))$) d = 0.100000")
-# ax[2].plot(data5[:, 0], data5[:, 3], label=r"$dN_{t}$ d = 0.100000")
-
-
-# ax[0].plot(data6[:, 0], data6[:, 1], label=r"Tr$(\rho(t))$ d =0.000000")
-# ax[1].plot(data6[:, 0], data6[:, 2], label=r"ln(Tr$(\rho(t))$) d = 0.000000")
-# ax[2].plot(data6[:, 0], data6[:, 3], label=r"$dN_{t}$ d = 0.000000")
+# ax[0].plot(data1[:, 0], data1[:, 1], label=r"Tr$(\rho(t)) \Delta =0.975$")
+# ax[1].plot(data1[:, 0], data1[:, 2], label=r"ln(Tr$(\rho(t))$ $\Delta = 0.975$")
+# ax[2].plot(data1[:, 0], data1[:, 3], label=r"$dN_{t} \Delta = 0.975$")
 
 
 
-# Enable grid
+
+# ax[0].plot(data2[:, 0], data2[:, 1], label=r"Tr$(\rho(t)) \Delta =1.300$")
+# ax[1].plot(data2[:, 0], data2[:, 2], label=r"ln(Tr$(\rho(t))$ $\Delta = 1.300$")
+# ax[2].plot(data2[:, 0], data2[:, 3], label=r"$dN_{t} \Delta = 1.300$")
+
+
+# ax[0].plot(data3[:, 0], data3[:, 1], label=r"Tr$(\rho(t)) \Delta =1.625$")
+# ax[1].plot(data3[:, 0], data3[:, 2], label=r"ln(Tr$(\rho(t))$ $\Delta = 1.625$")
+# ax[2].plot(data3[:, 0], data3[:, 3], label=r"$dN_{t} \Delta = 1.625$")
+
+
+# ax[0].plot(data4[:, 0], data4[:, 1], label=r"Tr$(\rho(t)) \Delta =2.600$")
+# ax[1].plot(data4[:, 0], data4[:, 2], label=r"ln(Tr$(\rho(t))$ $\Delta = 2.600$")
+# ax[2].plot(data4[:, 0], data4[:, 3], label=r"$dN_{t} \Delta = 2.600$")
+
+
+
+
+
+
 # for i in range(3):
 #     ax[i].grid(True)
 #     ax[i].legend()

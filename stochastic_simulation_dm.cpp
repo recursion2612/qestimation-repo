@@ -116,7 +116,7 @@ cx_mat M1(cx_mat c, double p)
 
 
 /// VIP function 
-/// generates one linear quantum trajectories with given hamiltonian
+/// generates one linear quantum trajectories with given hamiltonian uses the stochastic_dm.cpp method for that 
 void linear_stochastic_trajectoryV1(int steps, cx_mat& H, double adhoc_prob, double dt_1, cx_mat& rhot, cx_mat& c, cx_mat& cdagc, vec& tr_data, vec& lntr_data, ivec& countsss_arr)
 {
 	for(int ii=1; ii<steps; ii++)
@@ -167,17 +167,15 @@ void linear_stochastic_trajectoryV1(int steps, cx_mat& H, double adhoc_prob, dou
 
 
 
-// Another VVIP function. return the likelihood function of one linear quantum trajectory
-
-vec linear_stochastic_trajectoryV2(int steps, cx_mat& H, double adhoc_prob, double dt_1, cx_mat& rhot, cx_mat& c, cx_mat& cdagc)
+/// VIP function 
+/// generates one linear quantum trajectories with given hamiltonian uses the stochastic_dm_2.cpp method for that 
+void linear_stochastic_trajectoryV2(int steps, cx_mat& H, double adhoc_prob, double dt_1, cx_mat& rhot, cx_mat& c, cx_mat& cdagc, vec& tr_data, vec& lntr_data, vec& avg_x, vec& avg_y, vec& avg_z, ivec& countsss_arr)
 {
 	
-	vec likelihood_vec(2, fill::zeros);
-
-	// arma_rng::set_seed(42069);
 	for(int ii=1; ii<steps; ii++)
 		{
-			
+			cx_mat Omega0 = M0(H, cdagc, dt_1, adhoc_prob);
+			cx_mat Omega1 = M1(c, adhoc_prob);
 			// Calculate the probabilty for transition
 			
 			// double dum = real(trace(cdagc * rhot));
@@ -190,45 +188,37 @@ vec linear_stochastic_trajectoryV2(int steps, cx_mat& H, double adhoc_prob, doub
 			
 			if(u <= p) // Transition possible
 			{
-				rhot = c*rhot*c.t();
-
-				// Default
-				// rhot = (1.0/trace(rhot))*rhot;
-
-				// Linear Quantum trajecotries 
-				rhot = (1.0/adhoc_prob)*rhot;
-
-				
+				rhot = Omega1*rhot*Omega1.t();
+				// rhot = rhot = (1.0/real(trace(rhot)))*rhot;
+				countsss_arr(ii) = 1;
 				
 				
 			}
 			else
 			{
 
-				rhot = rhot - j*dt_1*commutator(H,rhot) - 0.5*dt_1*Hypo(cdagc, rhot, adhoc_prob); // Change to adhoc_prob for linear Qtraj
+				rhot = Omega0*rhot*Omega0.t();
+				// rhot = (1.0/real(trace(rhot)))*rhot;
+				countsss_arr(ii) = 0;
 	
 			}
 
+			tr_data(ii) = real(trace(rhot));
+			lntr_data(ii) = log(tr_data(ii));
+			avg_x(ii) = real(trace(sx*rhot));
+			avg_y(ii) = real(trace(sy*rhot));
+			avg_z(ii) = real(trace(sz*rhot));
 			
-			if(ii == steps-1)
-			{
-
-				likelihood_vec(0) = real(trace(rhot)); // stores liklihood function
-				likelihood_vec(1) = log(likelihood_vec(0)); // stores log-liklihood function
-				// cout<<"L(T)="<<likelihood_vec(0)<<endl<<"ln(L(T))="<<likelihood_vec(1)<<endl;
-
-
-			}
 
 		}
-
-		return likelihood_vec;
-
 
 }
 
 
-vec linear_stochastic_trajectoryV3(int steps, cx_mat& H, double adhoc_prob, double dt_1, cx_mat& rhot, cx_mat& c, cx_mat& cdagc)
+
+// outputs liklihood function | takes the observed measuerment record as input and gives out a liklihood fucntion 
+/// uses the stochastic_dm.cpp method for solving master equation
+vec likelihood_function_V1(int steps, cx_mat& H, double adhoc_prob, double dt_1, cx_mat& rhot, cx_mat& c, cx_mat& cdagc, ivec& countsss_arr)
 {
 	vec likelihood_vec(2, fill::zeros);
 
@@ -242,28 +232,28 @@ vec linear_stochastic_trajectoryV3(int steps, cx_mat& H, double adhoc_prob, doub
 		
 		double p = adhoc_prob*dt_1; //dum*dt_1;
 
-		cx_mat Omega0 = M0(H, cdagc, dt_1, adhoc_prob);
-		cx_mat Omega1 = M1(c, adhoc_prob);
 
-
-		// Pick random number 
-		double u = randu();
+		// Access countss_arr to get the transition var
+		int transition = countsss_arr(ii);
 		
-		if(u <= p) // Transition possible
+		
+		if(transition == 1) // Transition takes place
 		{
-			rhot = Omega1*rhot*Omega1.t();
-			
+			rhot = c*rhot*c.t();
 
-			// rhot = rhot = (1.0/real(trace(rhot)))*rhot;
+			// Default
+			// rhot = (1.0/trace(rhot))*rhot;
+
+			// Linear Quantum trajecotries 
+			rhot = (1.0/adhoc_prob)*rhot;
 			
 			
 		}
-		else
+
+		else               // transition does not take place 
 		{
 
-			rhot = Omega0*rhot*Omega0.t();
-			
-			// rhot = (1.0/real(trace(rhot)))*rhot;
+			rhot = rhot - j*dt_1*commutator(H,rhot) - 0.5*dt_1*Hypo(cdagc, rhot, adhoc_prob); // Change to adhoc_prob for linear Qtraj
 			
 
 		}
@@ -283,6 +273,110 @@ vec linear_stochastic_trajectoryV3(int steps, cx_mat& H, double adhoc_prob, doub
 	return likelihood_vec;
 
 }
+
+
+
+// outputs liklihood function | takes the observed measuerment record as input and gives out a liklihood fucntion 
+/// uses the stochastic_dm_2.cpp method for solving master equation
+vec likelihood_funciton_V2(int steps, cx_mat& H, double adhoc_prob, double dt_1, cx_mat& rhot, cx_mat& c, cx_mat& cdagc, ivec& countsss_arr)
+{
+	vec likelihood_vec(2, fill::zeros);
+
+	cx_mat Omega0 = M0(H, cdagc, dt_1, adhoc_prob);
+	cx_mat Omega1 = M1(c, adhoc_prob);
+
+	// arma_rng::set_seed(42069);
+	for(int ii=1; ii<steps; ii++)
+	{
+		
+		// Calculate the probabilty for transition
+		
+		// double dum = real(trace(cdagc * rhot));
+		
+		double p = adhoc_prob*dt_1; //dum*dt_1;
+
+
+		// Pick random number 
+		double u = randu();
+		
+		if(u <= p) // Transition possible
+		{
+			rhot = Omega1*rhot*Omega1.t();
+			// rhot = rhot = (1.0/real(trace(rhot)))*rhot;
+			countsss_arr(ii) = 1;
+			
+			
+			
+		}
+		else
+		{
+
+			rhot = Omega0*rhot*Omega0.t();
+			// rhot = (1.0/real(trace(rhot)))*rhot;
+			countsss_arr(ii) = 0;
+	
+		}
+
+		if(ii == steps-1)
+		{
+
+			likelihood_vec(0) = real(trace(rhot)); // stores liklihood function
+			likelihood_vec(1) = log(likelihood_vec(0)); // stores log-liklihood function
+			
+
+		}	
+		
+
+	}	
+
+	return likelihood_vec;
+
+}
+
+
+void generate_linear_trajectory_with_likelihood_function(int steps, cx_mat& H, double adhoc_prob, double dt_1, cx_mat& rhot, cx_mat& c, cx_mat& cdagc, vec& tr_data, vec& lntr_data, ivec& countsss_arr, vec& avg_x, vec& avg_y, vec& avg_z)
+{
+
+	// Set Kraus Operators
+	cx_mat Omega0 = M0(H, cdagc, dt_1, adhoc_prob);
+	cx_mat Omega1 = M1(c, adhoc_prob);
+
+	for(int ii=1; ii<steps; ii++)
+		{
+			
+
+			// Check transition 
+			int transition = countsss_arr(ii);
+			
+			if(transition == 1) // Transition possible
+			{
+				rhot = Omega1*rhot*Omega1.t();
+				// rhot = rhot = (1.0/real(trace(rhot)))*rhot;
+				
+				
+				
+				
+			}
+			else
+			{
+
+				rhot = Omega0*rhot*Omega0.t();
+				// rhot = (1.0/real(trace(rhot)))*rhot;
+				
+	
+			}
+
+			tr_data(ii) = real(trace(rhot));
+			lntr_data(ii) = log(tr_data(ii));
+			avg_x(ii) = real(trace(sx*rhot));
+			avg_y(ii) = real(trace(sy*rhot));
+			avg_z(ii) = real(trace(sz*rhot));		
+
+		}
+
+
+}
+
 
 
 
@@ -323,7 +417,7 @@ int main(int argc, char* argv[])
 	double dt_1 = 0.001;  //0.1/norm(H, "fro");
 
 	// We can also include adhoc probability which is used in linear quanutum trajecotries
-	double adhoc_prob = 0.1; // lambda: To be used for linear quantum trajectories
+	double adhoc_prob = 0.55; // lambda: To be used for linear quantum trajectories
 
 	// total time of evolution
 	double T = 400.0; 
@@ -339,6 +433,7 @@ int main(int argc, char* argv[])
 
 	vec tr_data(steps, fill::zeros);
 	vec lntr_data(steps, fill::zeros);
+	vec avg_x(steps, fill::zeros), avg_y(steps, fill::zeros), avg_z(steps, fill::zeros);
 
 	tr_data(0) = real(trace(rho0));
 	lntr_data(0) = log(real(tr_data(0)));
@@ -347,184 +442,218 @@ int main(int argc, char* argv[])
 	// Dynamics
 	cx_mat rhot(2, 2, fill::zeros); // dummy wf
 
+	// Generate a linear quantum trajectory with a given ostensible probability distribution // 
+	rhot = rho0;
+	linear_stochastic_trajectoryV2(steps, H, adhoc_prob, dt_1, rhot, c, cdagc, tr_data, lntr_data, avg_x, avg_y, avg_z, countsss_arr);
 	
+	ofstream data0("./test_trajectory/test_trajectory_delta="+to_string(delta)+".txt");
+	for(int ii = 0; ii < steps; ii++)
+	{
+		data0<<ii<<"\t"<<tr_data(ii)<<"\t"<<lntr_data(ii)<<"\t"<<avg_x(ii)<<"\t"<<avg_y(ii)<<"\t"<<avg_z(ii)<<endl;
+	}
+
+	data0.close();
+
+	/// Now countsss_arr contains measurement data obtained for the original linear quantum trajecotory	
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
  	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/// TEST CODE ///
-	// generates a linear quantum trajectory with true parameter values 
+			
+	rhot = rho0;
 	
-	// rhot = rho0;
-	// linear_stochastic_trajectoryV1(steps, H, adhoc_prob, dt_1, rhot, c, cdagc, tr_data, lntr_data, countsss_arr);
+	double delta_1 = 1.0;
+	cx_mat H1 = Rabi_with_detunning(omega, delta_1);
+	generate_linear_trajectory_with_likelihood_function(steps, H1, adhoc_prob, dt_1, rhot, c, cdagc, tr_data, lntr_data, countsss_arr, avg_x, avg_y, avg_z);
 
-	// cout<<"method 1\n"<<"tr"<<tr_data(steps-1)<<"\t lntr"<<lntr_data(steps-1)<<endl;
-
-	// rhot = rho0;
-	// cout<<"method 2\n";
-	// cout<<linear_stochastic_trajectoryV2(steps, H, adhoc_prob, dt_1, rhot, c, cdagc)<<endl;
-
-	// rhot = rho0;
-	// cout<<"method 3\n";
-	// cout<<linear_stochastic_trajectoryV3(steps, H, adhoc_prob, dt_1, rhot, c, cdagc)<<endl;
-
-	// cout<<"Total counts:"<<sum(countsss_arr)<<endl;
-
-
-	// ofstream myFile("data_dm_linear_delta="+to_string(delta)+".txt");
-	// for(int ii=0; ii<steps; ii++)
-	// {
-	// 	myFile<<dt_1*double(ii)<<'\t'<<tr_data(ii)<<'\t'<<lntr_data(ii)<<'\t'<<countsss_arr(ii)<<endl;
-	// }
-
- 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
- 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	// MCMC code begins 
-	// the main goal of this code is to output a trace plot of the parameter vs. iterations to check if we can infer the parameter
-	// Parameter delta = 1.43 actual value 
-	// We start with a gaussian prior with mean = 2.0 and std = 1.0
-	// No. of MCMC iterations = 10000
-	// Output an array of parameter values accepted at each iteration of MCMC
-
-	cout<<" ...Initiating MCMC sampling... \n";
-
-	int mcmc_iter = 10000;
-
-	cout<<"No. of Iterations:"<<mcmc_iter<<endl;
-
-
-	vec param_arr(mcmc_iter, fill::zeros);
-
-	double delta_in = 2.0;
-
-	cout<<"Initial value of parameter (delta_in):"<<delta_in<<endl;
-
-	param_arr(0) = delta_in;
-
-	cx_mat H_c(2, 2, fill::zeros), H_ii(2, 2, fill::zeros);
-
-	vec likelihood_vec_c(2, fill::zeros), likelihood_vec_ii(2, fill::zeros);
-
-	int acceptance = 0;
-	int always_accepted = 0;
-
-	// ofstream rawdata("mcmc_primitive_data.txt");
-
-	time_t start, end; 
-
-	time(&start); 
-
-	
-	
-	for(int ii=1; ii<mcmc_iter; ii++)
+	ofstream data1("./test_trajectory/test_trajectory_delta="+to_string(delta_1)+".txt");
+	for(int ii = 0; ii < steps; ii++)
 	{
+		data1<<ii<<"\t"<<tr_data(ii)<<"\t"<<lntr_data(ii)<<"\t"<<avg_x(ii)<<"\t"<<avg_y(ii)<<"\t"<<avg_z(ii)<<endl;
+	}
 
-		double delta_ii = param_arr(ii-1);
+	data1.close();
 
-		// generate a candidate value of the parameter from some proposal distribution 
-		double delta_c = generate_delta_from_proposal_dist(delta_ii);
+	rhot = rho0;
+	
+	double delta_2 = 2.0;
+	cx_mat H2 = Rabi_with_detunning(omega, delta_2);
+	generate_linear_trajectory_with_likelihood_function(steps, H2, adhoc_prob, dt_1, rhot, c, cdagc, tr_data, lntr_data, countsss_arr, avg_x, avg_y, avg_z);
+
+	ofstream data2("./test_trajectory/test_trajectory_delta="+to_string(delta_2)+".txt");
+	for(int ii = 0; ii < steps; ii++)
+	{
+		data2<<ii<<"\t"<<tr_data(ii)<<"\t"<<lntr_data(ii)<<"\t"<<avg_x(ii)<<"\t"<<avg_y(ii)<<"\t"<<avg_z(ii)<<endl;
+	}
+
+	data2.close();
+
+
+
+
+	rhot = rho0;
+	
+	double delta_3 = 0.0;
+	cx_mat H3 = Rabi_with_detunning(omega, delta_3);
+	generate_linear_trajectory_with_likelihood_function(steps, H3, adhoc_prob, dt_1, rhot, c, cdagc, tr_data, lntr_data, countsss_arr, avg_x, avg_y, avg_z);
+
+	ofstream data3("./test_trajectory/test_trajectory_delta="+to_string(delta_3)+".txt");
+	for(int ii = 0; ii < steps; ii++)
+	{
+		data3<<ii<<"\t"<<tr_data(ii)<<"\t"<<lntr_data(ii)<<"\t"<<avg_x(ii)<<"\t"<<avg_y(ii)<<"\t"<<avg_z(ii)<<endl;
+	}
+
+	data3.close();
+	
+ 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	// // MCMC code begins 
+	// // the main goal of this code is to output a trace plot of the parameter vs. iterations to check if we can infer the parameter
+	// // Parameter delta = 1.43 actual value 
+	// // We start with a gaussian prior with mean = 2.0 and std = 1.0
+	// // No. of MCMC iterations = 10000
+	// // Output an array of parameter values accepted at each iteration of MCMC
+
+	// cout<<" ...Initiating MCMC sampling... \n";
+
+	// int mcmc_iter = 10000;
+
+	// cout<<"No. of Iterations:"<<mcmc_iter<<endl;
+
+
+	// vec param_arr(mcmc_iter, fill::zeros);
+
+	// double delta_in = 2.0;
+
+	// cout<<"Initial value of parameter (delta_in):"<<delta_in<<endl;
+
+	// param_arr(0) = delta_in;
+
+	// cx_mat H_c(2, 2, fill::zeros), H_ii(2, 2, fill::zeros);
+
+	// vec likelihood_vec_c(2, fill::zeros), likelihood_vec_ii(2, fill::zeros);
+
+	// int acceptance = 0;
+	// int always_accepted = 0;
+
+	// // ofstream rawdata("mcmc_primitive_data.txt");
+
+	// time_t start, end; 
+
+	// time(&start); 
+
+	
+	
+	// for(int ii=1; ii<mcmc_iter; ii++)
+	// {
+
+	// 	double delta_ii = param_arr(ii-1);
+
+	// 	// generate a candidate value of the parameter from some proposal distribution 
+	// 	double delta_c = generate_delta_from_proposal_dist(delta_ii);
 		
-		cout<<"Iteration: "<<ii<<endl;
+	// 	cout<<"Iteration: "<<ii<<endl;
 
-		// initialize hamiltonian with the candidate param
-		H_c = Rabi_with_detunning(omega, delta_c);
+	// 	// initialize hamiltonian with the candidate param
+	// 	H_c = Rabi_with_detunning(omega, delta_c);
 
-		// initalize hamiltonian with previous param
-		H_ii = Rabi_with_detunning(omega, delta_ii);
+	// 	// initalize hamiltonian with previous param
+	// 	H_ii = Rabi_with_detunning(omega, delta_ii);
 
 
-		// returns a likelihood function values upto some timesteps 'steps' i.e. upto time "dt_1*steps"
-		rhot = rho0;
+	// 	// returns a likelihood function values upto some timesteps 'steps' i.e. upto time "dt_1*steps"
+	// 	rhot = rho0;
 		
-		likelihood_vec_c = linear_stochastic_trajectoryV3(steps, H_c, adhoc_prob, dt_1, rhot, c, cdagc);
+	// 	likelihood_vec_c = linear_stochastic_trajectoryV2(steps, H_c, adhoc_prob, dt_1, rhot, c, cdagc);
 		
 
-		// returns a likelihood function values upto some timesteps 'steps' i.e. upto time "dt_1*steps"
-		rhot = rho0;
+	// 	// returns a likelihood function values upto some timesteps 'steps' i.e. upto time "dt_1*steps"
+	// 	rhot = rho0;
 		
-		likelihood_vec_ii = linear_stochastic_trajectoryV3(steps, H_ii, adhoc_prob, dt_1, rhot, c, cdagc);
+	// 	likelihood_vec_ii = linear_stochastic_trajectoryV2(steps, H_ii, adhoc_prob, dt_1, rhot, c, cdagc);
 
 
-		// Calculate acceptance probability
+	// 	// Calculate acceptance probability
 
-		double likelihood_ratio = exp(likelihood_vec_c(1)-likelihood_vec_ii(1));
+	// 	double likelihood_ratio = exp(likelihood_vec_c(1)-likelihood_vec_ii(1));
 
-		double prior_ratio = (prior_dist_pdf(delta_c)/prior_dist_pdf(delta_ii));
+	// 	double prior_ratio = (prior_dist_pdf(delta_c)/prior_dist_pdf(delta_ii));
 
-		double proposal_ratio = (proposal_dist_pdf(delta_ii, delta_c)/proposal_dist_pdf(delta_c, delta_ii));
+	// 	double proposal_ratio = (proposal_dist_pdf(delta_ii, delta_c)/proposal_dist_pdf(delta_c, delta_ii));
 
-		double alpha = likelihood_ratio*prior_ratio*proposal_ratio;
+	// 	double alpha = likelihood_ratio*prior_ratio*proposal_ratio;
 
 		
 		
-		if (alpha >= 1.0)
-		{
+	// 	if (alpha >= 1.0)
+	// 	{
 
-			param_arr(ii) = delta_c;
+	// 		param_arr(ii) = delta_c;
 
-			acceptance++;
-			always_accepted++;
+	// 		acceptance++;
+	// 		always_accepted++;
 
 			
-		}
+	// 	}
 
-		else
-		{
-			// arma_rng::set_seed_random();
-			double uni_rv  = randu();
+	// 	else
+	// 	{
+	// 		// arma_rng::set_seed_random();
+	// 		double uni_rv  = randu();
 
-			if( uni_rv <= alpha )
-			{
+	// 		if( uni_rv <= alpha )
+	// 		{
 
-				param_arr(ii) = delta_c;
+	// 			param_arr(ii) = delta_c;
 
-				acceptance++;
-
-				
-
-			}
-
-			else
-			{
-
-				param_arr(ii) = param_arr(ii-1);
+	// 			acceptance++;
 
 				
 
-			} 
+	// 		}
 
-		}
+	// 		else
+	// 		{
 
-		// rawdata<<ii<<"\t"<<delta_in<<"\t"<<delta_c<<"\t"<<likelihood_vec_ii(1)<<"\t"<<likelihood_vec_c(1)<<"\t"<<likelihood_ratio<<"\t"<<prior_ratio<<"\t"<<proposal_ratio<<"\t"<<alpha<<"\t"<<param_arr(ii)<<endl;
+	// 			param_arr(ii) = param_arr(ii-1);
+
+				
+
+	// 		} 
+
+	// 	}
+
+	// 	// rawdata<<ii<<"\t"<<delta_in<<"\t"<<delta_c<<"\t"<<likelihood_vec_ii(1)<<"\t"<<likelihood_vec_c(1)<<"\t"<<likelihood_ratio<<"\t"<<prior_ratio<<"\t"<<proposal_ratio<<"\t"<<alpha<<"\t"<<param_arr(ii)<<endl;
 		
-	}
+	// }
 
-	// Recording end time. 
-	time(&end); 
+	// // Recording end time. 
+	// time(&end); 
 
-	// rawdata.close();
+	// // rawdata.close();
 	
 
 
 
 
 
-	// Calculating total time taken by the program. 
-	double time_taken = double(end - start);
-	cout.precision(5); 
-	cout << "Time taken by program is : " << fixed << time_taken <<" sec " << endl;
+	// // Calculating total time taken by the program. 
+	// double time_taken = double(end - start);
+	// cout.precision(5); 
+	// cout << "Time taken by program is : " << fixed << time_taken <<" sec " << endl;
 
-	cout<<"acceptance_rate="<<double(acceptance)/double(mcmc_iter)<<endl;
-	cout<<"fraction_of_always_accepted="<<double(always_accepted)/double(mcmc_iter)<<endl;
+	// cout<<"acceptance_rate="<<double(acceptance)/double(mcmc_iter)<<endl;
+	// cout<<"fraction_of_always_accepted="<<double(always_accepted)/double(mcmc_iter)<<endl;
 
 
-	ofstream myFile("mcmc_data.txt");
-	for(int ii = 0; ii<mcmc_iter; ii++)
-	{
+	// ofstream myFile("mcmc_data.txt");
+	// for(int ii = 0; ii<mcmc_iter; ii++)
+	// {
 
-		myFile<<ii<<'\t'<<param_arr(ii)<<endl;
+	// 	myFile<<ii<<'\t'<<param_arr(ii)<<endl;
 
-	}
+	// }
 
 
 
